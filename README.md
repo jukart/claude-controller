@@ -1,6 +1,6 @@
 # Claude Controller
 
-A desktop app for managing multiple Claude CLI sessions across your projects. Each project gets its own terminal with a dedicated Claude session, all accessible from a single window.
+A desktop app for managing multiple Claude CLI sessions across your projects. Each project gets its own terminal tabs — a dedicated Claude session plus additional shell terminals — all accessible from a single window.
 
 ## Prerequisites
 
@@ -26,13 +26,13 @@ npm start
 
 1. Click the **+** button in the sidebar to add a project folder.
 2. Click a project in the sidebar to open a Claude session in that project's directory.
-3. The status dot next to each project shows whether a session is running.
-4. Click the **×** button on a project to remove it from the list (this also stops any active session).
-5. If a session ends, click the project again to restart it.
+3. The status dot next to each project shows whether any sessions are running.
+4. Click the **×** button on a project to remove it from the list (this also stops all active sessions).
+5. Click the active project again to restart its Claude session if it was closed.
 
-### Terminal
+### Terminals
 
-Each project gets a full terminal (xterm.js) running Claude CLI. You can interact with Claude just as you would in a regular terminal. Switching between projects preserves each session's state.
+Each project gets a tab bar above the terminal area. The first tab auto-launches Claude CLI. You can open additional plain shell terminals with the **+** button in the tab bar. Tabs close automatically when their session ends, or you can close them manually with the **×** on each tab. Switching between projects preserves each session's state.
 
 ## Building distributables
 
