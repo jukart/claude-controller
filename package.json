@@ -1,6 +1,6 @@
 {
   "name": "claude-controller",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Manage multiple Claude CLI sessions across projects",
   "main": "main.js",
   "scripts": {
@@ -35,7 +35,17 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icon.icns",
+      "identity": null
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ],
+      "window": { "width": 540, "height": 380 },
+      "iconSize": 80
     },
     "win": {
       "target": "nsis"

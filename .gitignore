@@ -7,7 +7,8 @@ __pycache__/
 
 # Build output
 dist/
-build/
+build/*
+!build/icon.icns
 out/
 *.egg-info/
 
