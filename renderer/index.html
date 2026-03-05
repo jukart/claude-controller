@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self';">
+  <title>Claude Controller</title>
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <h1>Projects</h1>
+        <button id="add-project-btn" title="Add project folder">+</button>
+      </div>
+      <ul id="project-list"></ul>
+    </aside>
+    <main id="main">
+      <div id="empty-state">
+        <p>Select a project to start a Claude session</p>
+        <p class="hint">or click + to add a project folder</p>
+      </div>
+      <div id="terminal-container"></div>
+    </main>
+  </div>
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
