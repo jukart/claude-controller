@@ -18,7 +18,7 @@ function saveProjects(projects) {
 }
 
 let mainWindow;
-const sessions = new Map();
+const sessions = new Map(); // sessionId -> pty process
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -67,16 +67,19 @@ ipcMain.handle('add-project', async () => {
 ipcMain.handle('remove-project', (_, projectPath) => {
   const projects = loadProjects().filter(p => p !== projectPath);
   saveProjects(projects);
-  if (sessions.has(projectPath)) {
-    sessions.get(projectPath).kill();
-    sessions.delete(projectPath);
+  // Kill all sessions belonging to this project
+  for (const [sessionId, proc] of sessions) {
+    if (sessionId.startsWith(projectPath + '::')) {
+      proc.kill();
+      sessions.delete(sessionId);
+    }
   }
   return projects;
 });
 
 // Session management
-ipcMain.handle('start-session', (event, projectPath) => {
-  if (sessions.has(projectPath)) {
+ipcMain.handle('start-session', (event, sessionId, projectPath, launchClaude) => {
+  if (sessions.has(sessionId)) {
     return { alreadyRunning: true };
   }
 
@@ -89,43 +92,48 @@ ipcMain.handle('start-session', (event, projectPath) => {
     env: { ...process.env, TERM: 'xterm-256color' }
   });
 
-  // Send claude command after shell initializes
-  setTimeout(() => {
-    proc.write('claude\n');
-  }, 500);
+  if (launchClaude) {
+    setTimeout(() => {
+      proc.write('claude\n');
+    }, 500);
+  }
 
-  sessions.set(projectPath, proc);
+  sessions.set(sessionId, proc);
 
   proc.onData((data) => {
-    mainWindow?.webContents.send('session-data', projectPath, data);
+    if (!mainWindow?.isDestroyed()) {
+      mainWindow.webContents.send('session-data', sessionId, data);
+    }
   });
 
   proc.onExit(({ exitCode }) => {
-    sessions.delete(projectPath);
-    mainWindow?.webContents.send('session-exit', projectPath, exitCode);
+    sessions.delete(sessionId);
+    if (!mainWindow?.isDestroyed()) {
+      mainWindow.webContents.send('session-exit', sessionId, exitCode);
+    }
   });
 
   return { alreadyRunning: false };
 });
 
-ipcMain.handle('session-write', (_, projectPath, data) => {
-  const proc = sessions.get(projectPath);
+ipcMain.handle('session-write', (_, sessionId, data) => {
+  const proc = sessions.get(sessionId);
   if (proc) proc.write(data);
 });
 
-ipcMain.handle('session-resize', (_, projectPath, cols, rows) => {
-  const proc = sessions.get(projectPath);
+ipcMain.handle('session-resize', (_, sessionId, cols, rows) => {
+  const proc = sessions.get(sessionId);
   if (proc) proc.resize(cols, rows);
 });
 
-ipcMain.handle('session-active', (_, projectPath) => {
-  return sessions.has(projectPath);
+ipcMain.handle('session-active', (_, sessionId) => {
+  return sessions.has(sessionId);
 });
 
-ipcMain.handle('stop-session', (_, projectPath) => {
-  const proc = sessions.get(projectPath);
+ipcMain.handle('stop-session', (_, sessionId) => {
+  const proc = sessions.get(sessionId);
   if (proc) {
     proc.kill();
-    sessions.delete(projectPath);
+    sessions.delete(sessionId);
   }
 });

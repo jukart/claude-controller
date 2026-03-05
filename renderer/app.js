@@ -3,10 +3,24 @@
 const projectList = document.getElementById('project-list');
 const addProjectBtn = document.getElementById('add-project-btn');
 const terminalContainer = document.getElementById('terminal-container');
+const tabBar = document.getElementById('tab-bar');
+const tabList = document.getElementById('tab-list');
+const addTabBtn = document.getElementById('add-tab-btn');
 const emptyState = document.getElementById('empty-state');
 
-const terminals = new Map();
+// projectTabs: projectPath -> [{ sessionId, terminal, fitAddon, wrapper, opened, label }]
+const projectTabs = new Map();
+// activeTabId: projectPath -> sessionId (which tab is active per project)
+const activeTabId = new Map();
+// sessionToProject: sessionId -> projectPath
+const sessionToProject = new Map();
+
 let activeProject = null;
+let tabCounter = 0;
+
+function generateSessionId(projectPath) {
+  return projectPath + '::' + (tabCounter++);
+}
 
 async function renderProjects() {
   const projects = await window.api.getProjects();
@@ -14,8 +28,9 @@ async function renderProjects() {
 
   for (const projectPath of projects) {
     const li = document.createElement('li');
-    const isActive = await window.api.sessionActive(projectPath);
-    if (isActive) li.classList.add('running');
+    const tabs = projectTabs.get(projectPath) || [];
+    const hasRunning = tabs.length > 0;
+    if (hasRunning) li.classList.add('running');
     if (projectPath === activeProject) li.classList.add('active');
 
     const folderName = projectPath.split('/').filter(Boolean).pop();
@@ -50,27 +65,27 @@ function escapeHtml(str) {
 }
 
 async function selectProject(projectPath) {
+  const wasActive = activeProject === projectPath;
   activeProject = projectPath;
 
-  const isActive = await window.api.sessionActive(projectPath);
-  if (!isActive) {
-    // Clean up old terminated terminal if any
-    const oldEntry = terminals.get(projectPath);
-    if (oldEntry) {
-      oldEntry.terminal.dispose();
-      oldEntry.wrapper.remove();
-      terminals.delete(projectPath);
-    }
-    createTerminal(projectPath);
-    await window.api.startSession(projectPath);
+  const tabs = projectTabs.get(projectPath) || [];
+  const hasClaudeTab = tabs.some(t => t.label === 'Claude');
+
+  if (!hasClaudeTab && (tabs.length === 0 || wasActive)) {
+    await addTerminalTab(projectPath, true);
   }
 
-  showTerminal(projectPath);
+  showProject(projectPath);
   await renderProjects();
 }
 
-function createTerminal(projectPath) {
-  if (terminals.has(projectPath)) return;
+async function addTerminalTab(projectPath, launchClaude) {
+  const sessionId = generateSessionId(projectPath);
+  const label = launchClaude ? 'Claude' : 'Terminal';
+
+  if (!projectTabs.has(projectPath)) {
+    projectTabs.set(projectPath, []);
+  }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'terminal-wrapper';
@@ -110,34 +125,126 @@ function createTerminal(projectPath) {
   terminal.loadAddon(fitAddon);
 
   terminal.onData((data) => {
-    window.api.sessionWrite(projectPath, data);
+    window.api.sessionWrite(sessionId, data);
   });
 
   terminal.onResize(({ cols, rows }) => {
-    window.api.sessionResize(projectPath, cols, rows);
+    window.api.sessionResize(sessionId, cols, rows);
   });
 
-  terminals.set(projectPath, { terminal, fitAddon, wrapper, opened: false });
+  const tab = { sessionId, terminal, fitAddon, wrapper, opened: false, label };
+  if (launchClaude) {
+    projectTabs.get(projectPath).unshift(tab);
+  } else {
+    projectTabs.get(projectPath).push(tab);
+  }
+  sessionToProject.set(sessionId, projectPath);
+  activeTabId.set(projectPath, sessionId);
+
+  await window.api.startSession(sessionId, projectPath, launchClaude);
+  return sessionId;
 }
 
-function showTerminal(projectPath) {
+function showProject(projectPath) {
   emptyState.style.display = 'none';
   terminalContainer.classList.add('visible');
+  tabBar.classList.add('visible');
 
-  for (const [, { wrapper }] of terminals) {
-    wrapper.classList.remove('active');
-  }
-
-  const entry = terminals.get(projectPath);
-  if (entry) {
-    entry.wrapper.classList.add('active');
-    if (!entry.opened) {
-      entry.terminal.open(entry.wrapper);
-      entry.opened = true;
+  // Hide all terminal wrappers
+  for (const [, tabs] of projectTabs) {
+    for (const tab of tabs) {
+      tab.wrapper.classList.remove('active');
     }
-    entry.fitAddon.fit();
-    entry.terminal.focus();
   }
+
+  const currentSessionId = activeTabId.get(projectPath);
+  const tabs = projectTabs.get(projectPath) || [];
+  const activeTab = tabs.find(t => t.sessionId === currentSessionId);
+
+  if (activeTab) {
+    activeTab.wrapper.classList.add('active');
+    if (!activeTab.opened) {
+      activeTab.terminal.open(activeTab.wrapper);
+      activeTab.opened = true;
+    }
+    activeTab.fitAddon.fit();
+    activeTab.terminal.focus();
+  }
+
+  renderTabs(projectPath);
+}
+
+function switchTab(projectPath, sessionId) {
+  activeTabId.set(projectPath, sessionId);
+  showProject(projectPath);
+}
+
+function renderTabs(projectPath) {
+  tabList.innerHTML = '';
+  const tabs = projectTabs.get(projectPath) || [];
+
+  for (const tab of tabs) {
+    const tabEl = document.createElement('div');
+    tabEl.className = 'tab';
+    if (tab.sessionId === activeTabId.get(projectPath)) {
+      tabEl.classList.add('active');
+    }
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'tab-label';
+    labelSpan.textContent = tab.label;
+    tabEl.appendChild(labelSpan);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.title = 'Close terminal';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeTab(projectPath, tab.sessionId);
+    });
+    tabEl.appendChild(closeBtn);
+
+    tabEl.addEventListener('click', () => {
+      switchTab(projectPath, tab.sessionId);
+    });
+
+    tabList.appendChild(tabEl);
+  }
+}
+
+async function closeTab(projectPath, sessionId) {
+  const tabs = projectTabs.get(projectPath);
+  if (!tabs) return;
+
+  const idx = tabs.findIndex(t => t.sessionId === sessionId);
+  if (idx === -1) return;
+
+  const tab = tabs[idx];
+  await window.api.stopSession(sessionId);
+  tab.terminal.dispose();
+  tab.wrapper.remove();
+  tabs.splice(idx, 1);
+  sessionToProject.delete(sessionId);
+
+  if (tabs.length === 0) {
+    projectTabs.delete(projectPath);
+    activeTabId.delete(projectPath);
+    if (activeProject === projectPath) {
+      tabBar.classList.remove('visible');
+      terminalContainer.classList.remove('visible');
+      emptyState.style.display = '';
+    }
+  } else {
+    // Switch to another tab if we closed the active one
+    if (activeTabId.get(projectPath) === sessionId) {
+      const newIdx = Math.min(idx, tabs.length - 1);
+      activeTabId.set(projectPath, tabs[newIdx].sessionId);
+    }
+    showProject(projectPath);
+  }
+
+  await renderProjects();
 }
 
 async function addProject() {
@@ -148,15 +255,18 @@ async function addProject() {
 async function removeProject(projectPath) {
   await window.api.removeProject(projectPath);
 
-  const entry = terminals.get(projectPath);
-  if (entry) {
-    entry.terminal.dispose();
-    entry.wrapper.remove();
-    terminals.delete(projectPath);
+  const tabs = projectTabs.get(projectPath) || [];
+  for (const tab of tabs) {
+    tab.terminal.dispose();
+    tab.wrapper.remove();
+    sessionToProject.delete(tab.sessionId);
   }
+  projectTabs.delete(projectPath);
+  activeTabId.delete(projectPath);
 
   if (activeProject === projectPath) {
     activeProject = null;
+    tabBar.classList.remove('visible');
     terminalContainer.classList.remove('visible');
     emptyState.style.display = '';
   }
@@ -164,27 +274,34 @@ async function removeProject(projectPath) {
   await renderProjects();
 }
 
-window.api.onSessionData((projectPath, data) => {
-  const entry = terminals.get(projectPath);
-  if (entry) entry.terminal.write(data);
+window.api.onSessionData((sessionId, data) => {
+  const projectPath = sessionToProject.get(sessionId);
+  if (!projectPath) return;
+  const tabs = projectTabs.get(projectPath) || [];
+  const tab = tabs.find(t => t.sessionId === sessionId);
+  if (tab) tab.terminal.write(data);
 });
 
-window.api.onSessionExit(async (projectPath, exitCode) => {
-  const entry = terminals.get(projectPath);
-  if (entry) {
-    entry.terminal.writeln(`\r\n\x1b[33m--- Session ended (exit code: ${exitCode}) ---\x1b[0m`);
-    entry.terminal.writeln(`\x1b[90mClick the project again to restart.\x1b[0m`);
-  }
-  await renderProjects();
+window.api.onSessionExit(async (sessionId) => {
+  const projectPath = sessionToProject.get(sessionId);
+  if (!projectPath) return;
+  await closeTab(projectPath, sessionId);
 });
 
 window.addEventListener('resize', () => {
-  for (const [, { fitAddon }] of terminals) {
-    fitAddon.fit();
+  for (const [, tabs] of projectTabs) {
+    for (const tab of tabs) {
+      tab.fitAddon.fit();
+    }
   }
 });
 
 addProjectBtn.addEventListener('click', addProject);
+addTabBtn.addEventListener('click', async () => {
+  if (!activeProject) return;
+  await addTerminalTab(activeProject, false);
+  showProject(activeProject);
+  await renderProjects();
+});
 
-// Also update preload - addProject now takes no args (dialog is in main process)
 renderProjects();
