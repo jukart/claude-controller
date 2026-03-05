@@ -26,35 +26,52 @@ async function renderProjects() {
   const projects = await window.api.getProjects();
   projectList.innerHTML = '';
 
+  // Group projects by parent folder
+  const groups = new Map();
   for (const projectPath of projects) {
-    const li = document.createElement('li');
-    const tabs = projectTabs.get(projectPath) || [];
-    const hasRunning = tabs.length > 0;
-    if (hasRunning) li.classList.add('running');
-    if (projectPath === activeProject) li.classList.add('active');
+    const parts = projectPath.split('/').filter(Boolean);
+    const parentFolder = parts.length >= 2 ? parts[parts.length - 2] : '/';
+    if (!groups.has(parentFolder)) {
+      groups.set(parentFolder, []);
+    }
+    groups.get(parentFolder).push(projectPath);
+  }
 
-    const folderName = projectPath.split('/').filter(Boolean).pop();
+  for (const [groupName, groupProjects] of groups) {
+    const header = document.createElement('li');
+    header.className = 'group-header';
+    header.textContent = groupName;
+    projectList.appendChild(header);
 
-    li.innerHTML = `
-      <span class="status-dot"></span>
-      <div class="project-info">
-        <div class="project-name">${escapeHtml(folderName)}</div>
-        <div class="project-path">${escapeHtml(projectPath)}</div>
-      </div>
-      <button class="remove-btn" title="Remove project">&times;</button>
-    `;
+    for (const projectPath of groupProjects) {
+      const li = document.createElement('li');
+      const tabs = projectTabs.get(projectPath) || [];
+      const hasRunning = tabs.length > 0;
+      if (hasRunning) li.classList.add('running');
+      if (projectPath === activeProject) li.classList.add('active');
 
-    li.addEventListener('click', (e) => {
-      if (e.target.closest('.remove-btn')) return;
-      selectProject(projectPath);
-    });
+      const folderName = projectPath.split('/').filter(Boolean).pop();
 
-    li.querySelector('.remove-btn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await removeProject(projectPath);
-    });
+      li.innerHTML = `
+        <span class="status-dot"></span>
+        <div class="project-info">
+          <div class="project-name">${escapeHtml(folderName)}</div>
+        </div>
+        <button class="remove-btn" title="Remove project">&times;</button>
+      `;
 
-    projectList.appendChild(li);
+      li.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-btn')) return;
+        selectProject(projectPath);
+      });
+
+      li.querySelector('.remove-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await removeProject(projectPath);
+      });
+
+      projectList.appendChild(li);
+    }
   }
 }
 

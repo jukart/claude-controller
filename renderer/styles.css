@@ -86,6 +86,20 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   padding: 0 8px;
 }
 
+#project-list .group-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  padding: 12px 12px 4px;
+  cursor: default;
+}
+
+#project-list .group-header:not(:first-child) {
+  margin-top: 8px;
+}
+
 #project-list li {
   display: flex;
   align-items: center;
@@ -97,7 +111,7 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   position: relative;
 }
 
-#project-list li:hover {
+#project-list li:not(.group-header):hover {
   background: var(--surface);
 }
 
