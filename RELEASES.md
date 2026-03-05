@@ -1,5 +1,9 @@
 # Releases
 
+## unreleased
+
+- Custom About dialog with app icon, version, and GitHub link
+
 ## v1.3.0
 
 - Replace auto-launch Claude with manual Claude button in tab bar

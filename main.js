@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const pty = require('node-pty');
@@ -50,7 +50,46 @@ function createWindow() {
   mainWindow.loadFile('renderer/index.html');
 }
 
-app.whenReady().then(createWindow);
+app.setAboutPanelOptions({
+  applicationName: 'Claude Controller',
+  applicationVersion: require('./package.json').version,
+  copyright: 'Built with Electron & Claude Code',
+  iconPath: path.join(__dirname, 'build', 'icon.icns'),
+  website: 'https://github.com/jukart/claude-controller'
+});
+
+function buildMenu() {
+  const template = [
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        {
+          label: 'GitHub Repository',
+          click: () => shell.openExternal('https://github.com/jukart/claude-controller')
+        },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+app.whenReady().then(() => {
+  buildMenu();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   for (const [, proc] of sessions) {
