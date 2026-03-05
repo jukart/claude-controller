@@ -1,6 +1,6 @@
 # Releases
 
-## unreleased
+## v1.3.0
 
 - Replace auto-launch Claude with manual Claude button in tab bar
 - Fix usage bars always empty by handling non-200 API responses
