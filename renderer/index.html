@@ -16,6 +16,7 @@
         <button id="add-project-btn" title="Add project folder">+</button>
       </div>
       <ul id="project-list"></ul>
+      <button id="global-settings-btn" title="Global settings">Global Settings</button>
       <div id="usage-bar">
         <div class="usage-row">
           <span class="usage-label">5h</span>
@@ -38,6 +39,43 @@
       <div id="tab-bar">
         <div id="tab-list"></div>
         <button id="add-tab-btn" title="New terminal">+</button>
+        <div id="tab-bar-spacer"></div>
+        <div id="launch-app-buttons"></div>
+        <button id="project-settings-btn" title="Project settings">Settings</button>
+      </div>
+      <div id="settings-modal" class="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h2>Project Settings</h2>
+            <button id="settings-close-btn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <label>External Apps</label>
+            <p class="field-hint">Commands to run in the project directory. Each app gets a button in the tab bar.</p>
+            <div id="external-apps-list"></div>
+            <button id="add-app-btn" class="btn-secondary">+ Add App</button>
+          </div>
+          <div class="modal-footer">
+            <button id="settings-save-btn" class="btn-primary">Save</button>
+          </div>
+        </div>
+      </div>
+      <div id="global-settings-modal" class="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h2>Global Settings</h2>
+            <button id="global-settings-close-btn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <label>External Apps (available in all projects)</label>
+            <p class="field-hint">These apps will appear alongside project-specific apps for every project.</p>
+            <div id="global-apps-list"></div>
+            <button id="global-add-app-btn" class="btn-secondary">+ Add App</button>
+          </div>
+          <div class="modal-footer">
+            <button id="global-settings-save-btn" class="btn-primary">Save</button>
+          </div>
+        </div>
       </div>
       <div id="terminal-container"></div>
     </main>

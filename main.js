@@ -4,6 +4,8 @@ const fs = require('fs');
 const pty = require('node-pty');
 
 const configPath = path.join(app.getPath('userData'), 'projects.json');
+const settingsPath = path.join(app.getPath('userData'), 'project-settings.json');
+const globalSettingsPath = path.join(app.getPath('userData'), 'global-settings.json');
 
 function loadProjects() {
   try {
@@ -15,6 +17,18 @@ function loadProjects() {
 
 function saveProjects(projects) {
   fs.writeFileSync(configPath, JSON.stringify(projects, null, 2));
+}
+
+function loadAllSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveAllSettings(settings) {
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 }
 
 let mainWindow;
@@ -201,4 +215,40 @@ ipcMain.handle('stop-session', (_, sessionId) => {
     proc.kill();
     sessions.delete(sessionId);
   }
+});
+
+// Project settings
+ipcMain.handle('get-project-settings', (_, projectPath) => {
+  const all = loadAllSettings();
+  return all[projectPath] || {};
+});
+
+ipcMain.handle('save-project-settings', (_, projectPath, settings) => {
+  const all = loadAllSettings();
+  all[projectPath] = settings;
+  saveAllSettings(all);
+});
+
+// Global settings
+ipcMain.handle('get-global-settings', () => {
+  try {
+    return JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
+  } catch {
+    return {};
+  }
+});
+
+ipcMain.handle('save-global-settings', (_, settings) => {
+  fs.writeFileSync(globalSettingsPath, JSON.stringify(settings, null, 2));
+});
+
+// Launch external app
+ipcMain.handle('launch-external-app', (_, projectPath, command) => {
+  if (!command) return { error: 'No command provided' };
+
+  const { exec } = require('child_process');
+  exec(command, { cwd: projectPath }, (err) => {
+    if (err) console.error('External app error:', err.message);
+  });
+  return { ok: true };
 });

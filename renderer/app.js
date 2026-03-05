@@ -7,6 +7,19 @@ const tabBar = document.getElementById('tab-bar');
 const tabList = document.getElementById('tab-list');
 const addTabBtn = document.getElementById('add-tab-btn');
 const emptyState = document.getElementById('empty-state');
+const launchAppButtons = document.getElementById('launch-app-buttons');
+const projectSettingsBtn = document.getElementById('project-settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const settingsCloseBtn = document.getElementById('settings-close-btn');
+const settingsSaveBtn = document.getElementById('settings-save-btn');
+const externalAppsList = document.getElementById('external-apps-list');
+const addAppBtn = document.getElementById('add-app-btn');
+const globalSettingsBtn = document.getElementById('global-settings-btn');
+const globalSettingsModal = document.getElementById('global-settings-modal');
+const globalSettingsCloseBtn = document.getElementById('global-settings-close-btn');
+const globalSettingsSaveBtn = document.getElementById('global-settings-save-btn');
+const globalAppsList = document.getElementById('global-apps-list');
+const globalAddAppBtn = document.getElementById('global-add-app-btn');
 
 // projectTabs: projectPath -> [{ sessionId, terminal, fitAddon, wrapper, opened, label }]
 const projectTabs = new Map();
@@ -67,6 +80,8 @@ async function renderProjects() {
 
       li.querySelector('.remove-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
+        const name = projectPath.split('/').pop();
+        if (!confirm(`Remove "${name}" from the project list? Any project settings will be lost.`)) return;
         await removeProject(projectPath);
       });
 
@@ -189,6 +204,7 @@ function showProject(projectPath) {
   }
 
   renderTabs(projectPath);
+  updateLaunchAppButtons();
 }
 
 function switchTab(projectPath, sessionId) {
@@ -366,5 +382,162 @@ async function updateUsage() {
 
 updateUsage();
 setInterval(updateUsage, 30000);
+
+// Settings modal - external apps
+function createAppEntryRow(name = '', command = '') {
+  const row = document.createElement('div');
+  row.className = 'app-entry';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'app-name-input';
+  nameInput.placeholder = 'Name';
+  nameInput.value = name;
+
+  const commandInput = document.createElement('input');
+  commandInput.type = 'text';
+  commandInput.className = 'app-command-input';
+  commandInput.placeholder = "e.g. open -a 'Visual Studio Code' .";
+  commandInput.value = command;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-app-btn';
+  removeBtn.textContent = '\u00d7';
+  removeBtn.title = 'Remove app';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.appendChild(nameInput);
+  row.appendChild(commandInput);
+  row.appendChild(removeBtn);
+  return row;
+}
+
+function loadAppsIntoModal(settings) {
+  externalAppsList.innerHTML = '';
+  const apps = settings.externalApps || [];
+  // Migrate old single-command format
+  if (apps.length === 0 && settings.externalAppCommand) {
+    apps.push({ name: 'Launch App', command: settings.externalAppCommand });
+  }
+  for (const app of apps) {
+    externalAppsList.appendChild(createAppEntryRow(app.name, app.command));
+  }
+}
+
+function getAppsFromModal() {
+  const rows = externalAppsList.querySelectorAll('.app-entry');
+  const apps = [];
+  for (const row of rows) {
+    const name = row.querySelector('.app-name-input').value.trim();
+    const command = row.querySelector('.app-command-input').value.trim();
+    if (name && command) apps.push({ name, command });
+  }
+  return apps;
+}
+
+addAppBtn.addEventListener('click', () => {
+  externalAppsList.appendChild(createAppEntryRow());
+  const lastRow = externalAppsList.lastElementChild;
+  lastRow.querySelector('.app-name-input').focus();
+});
+
+projectSettingsBtn.addEventListener('click', async () => {
+  if (!activeProject) return;
+  const settings = await window.api.getProjectSettings(activeProject);
+  loadAppsIntoModal(settings);
+  settingsModal.classList.add('visible');
+});
+
+settingsCloseBtn.addEventListener('click', () => {
+  settingsModal.classList.remove('visible');
+});
+
+settingsModal.addEventListener('click', (e) => {
+  if (e.target === settingsModal) settingsModal.classList.remove('visible');
+});
+
+settingsSaveBtn.addEventListener('click', async () => {
+  if (!activeProject) return;
+  const settings = await window.api.getProjectSettings(activeProject);
+  settings.externalApps = getAppsFromModal();
+  delete settings.externalAppCommand; // clean up old format
+  await window.api.saveProjectSettings(activeProject, settings);
+  settingsModal.classList.remove('visible');
+  updateLaunchAppButtons();
+});
+
+settingsModal.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') settingsModal.classList.remove('visible');
+});
+
+// Global settings modal
+globalSettingsBtn.addEventListener('click', async () => {
+  const settings = await window.api.getGlobalSettings();
+  globalAppsList.innerHTML = '';
+  const apps = settings.externalApps || [];
+  for (const app of apps) {
+    globalAppsList.appendChild(createAppEntryRow(app.name, app.command));
+  }
+  globalSettingsModal.classList.add('visible');
+});
+
+globalSettingsCloseBtn.addEventListener('click', () => {
+  globalSettingsModal.classList.remove('visible');
+});
+
+globalSettingsModal.addEventListener('click', (e) => {
+  if (e.target === globalSettingsModal) globalSettingsModal.classList.remove('visible');
+});
+
+globalSettingsModal.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') globalSettingsModal.classList.remove('visible');
+});
+
+globalAddAppBtn.addEventListener('click', () => {
+  globalAppsList.appendChild(createAppEntryRow());
+  globalAppsList.lastElementChild.querySelector('.app-name-input').focus();
+});
+
+globalSettingsSaveBtn.addEventListener('click', async () => {
+  const rows = globalAppsList.querySelectorAll('.app-entry');
+  const apps = [];
+  for (const row of rows) {
+    const name = row.querySelector('.app-name-input').value.trim();
+    const command = row.querySelector('.app-command-input').value.trim();
+    if (name && command) apps.push({ name, command });
+  }
+  await window.api.saveGlobalSettings({ externalApps: apps });
+  globalSettingsModal.classList.remove('visible');
+  updateLaunchAppButtons();
+});
+
+// Launch app buttons
+async function updateLaunchAppButtons() {
+  launchAppButtons.innerHTML = '';
+  if (!activeProject) return;
+
+  const globalSettings = await window.api.getGlobalSettings();
+  const globalApps = globalSettings.externalApps || [];
+
+  const settings = await window.api.getProjectSettings(activeProject);
+  let projectApps = settings.externalApps || [];
+  // Migrate old format on the fly
+  if (projectApps.length === 0 && settings.externalAppCommand) {
+    projectApps = [{ name: 'Launch App', command: settings.externalAppCommand }];
+  }
+
+  const apps = [...globalApps, ...projectApps];
+
+  for (const app of apps) {
+    const btn = document.createElement('button');
+    btn.className = 'launch-app-btn';
+    btn.textContent = app.name;
+    btn.title = app.command;
+    btn.addEventListener('click', async () => {
+      await window.api.launchExternalApp(activeProject, app.command);
+    });
+    launchAppButtons.appendChild(btn);
+  }
+}
 
 renderProjects();

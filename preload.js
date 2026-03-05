@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('api', {
   sessionActive: (sessionId) => ipcRenderer.invoke('session-active', sessionId),
   stopSession: (sessionId) => ipcRenderer.invoke('stop-session', sessionId),
   getUsage: () => ipcRenderer.invoke('get-usage'),
+  getProjectSettings: (path) => ipcRenderer.invoke('get-project-settings', path),
+  saveProjectSettings: (path, settings) => ipcRenderer.invoke('save-project-settings', path, settings),
+  getGlobalSettings: () => ipcRenderer.invoke('get-global-settings'),
+  saveGlobalSettings: (settings) => ipcRenderer.invoke('save-global-settings', settings),
+  launchExternalApp: (path, command) => ipcRenderer.invoke('launch-external-app', path, command),
   onSessionData: (callback) => ipcRenderer.on('session-data', (_, sessionId, data) => callback(sessionId, data)),
   onSessionExit: (callback) => ipcRenderer.on('session-exit', (_, sessionId, code) => callback(sessionId, code)),
 });
