@@ -6,6 +6,7 @@ const terminalContainer = document.getElementById('terminal-container');
 const tabBar = document.getElementById('tab-bar');
 const tabList = document.getElementById('tab-list');
 const addTabBtn = document.getElementById('add-tab-btn');
+const addClaudeBtn = document.getElementById('add-claude-btn');
 const emptyState = document.getElementById('empty-state');
 const launchAppButtons = document.getElementById('launch-app-buttons');
 const projectSettingsBtn = document.getElementById('project-settings-btn');
@@ -101,11 +102,6 @@ async function selectProject(projectPath) {
   activeProject = projectPath;
 
   const tabs = projectTabs.get(projectPath) || [];
-  const hasClaudeTab = tabs.some(t => t.label === 'Claude');
-
-  if (!hasClaudeTab && (tabs.length === 0 || wasActive)) {
-    await addTerminalTab(projectPath, true);
-  }
 
   showProject(projectPath);
   await renderProjects();
@@ -244,6 +240,9 @@ function renderTabs(projectPath) {
 
     tabList.appendChild(tabEl);
   }
+
+  const hasClaudeTab = tabs.some(t => t.label === 'Claude');
+  addClaudeBtn.style.display = hasClaudeTab ? 'none' : '';
 }
 
 async function closeTab(projectPath, sessionId) {
@@ -264,9 +263,7 @@ async function closeTab(projectPath, sessionId) {
     projectTabs.delete(projectPath);
     activeTabId.delete(projectPath);
     if (activeProject === projectPath) {
-      tabBar.classList.remove('visible');
-      terminalContainer.classList.remove('visible');
-      emptyState.style.display = '';
+      renderTabs(projectPath);
     }
   } else {
     // Switch to another tab if we closed the active one
@@ -330,6 +327,13 @@ window.addEventListener('resize', () => {
 });
 
 addProjectBtn.addEventListener('click', addProject);
+addClaudeBtn.addEventListener('click', async () => {
+  if (!activeProject) return;
+  await addTerminalTab(activeProject, true);
+  showProject(activeProject);
+  await renderProjects();
+});
+
 addTabBtn.addEventListener('click', async () => {
   if (!activeProject) return;
   await addTerminalTab(activeProject, false);

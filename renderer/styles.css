@@ -355,11 +355,12 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   color: var(--red);
 }
 
+#add-claude-btn,
 #add-tab-btn {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 18px;
+  font-size: 12px;
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 6px;
@@ -367,6 +368,11 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   transition: background 0.15s, color 0.15s;
 }
 
+#add-tab-btn {
+  font-size: 18px;
+}
+
+#add-claude-btn:hover,
 #add-tab-btn:hover {
   background: var(--surface);
   color: var(--text);
