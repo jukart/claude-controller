@@ -130,6 +130,71 @@ ipcMain.handle('session-active', (_, sessionId) => {
   return sessions.has(sessionId);
 });
 
+let usageCache = null;
+let usageCacheTime = 0;
+const USAGE_CACHE_MS = 180000; // 3 minutes
+
+async function fetchUsage() {
+  const now = Date.now();
+  if (usageCache && (now - usageCacheTime) < USAGE_CACHE_MS) {
+    return usageCache;
+  }
+  try {
+    const { execSync } = require('child_process');
+    const creds = JSON.parse(execSync(
+      'security find-generic-password -s "Claude Code-credentials" -w',
+      { encoding: 'utf8', timeout: 5000 }
+    ));
+    const token = creds.claudeAiOauth?.accessToken;
+    if (!token) throw new Error('No token');
+
+    const { net } = require('electron');
+    const data = await new Promise((resolve, reject) => {
+      const request = net.request({
+        method: 'GET',
+        url: 'https://api.anthropic.com/api/oauth/usage'
+      });
+      request.setHeader('Authorization', 'Bearer ' + token);
+      request.setHeader('anthropic-beta', 'oauth-2025-04-20');
+      request.setHeader('User-Agent', 'npm@anthropic-ai/claude-code');
+      let body = '';
+      request.on('response', (response) => {
+        response.on('data', (chunk) => { body += chunk.toString(); });
+        response.on('end', () => {
+          try { resolve(JSON.parse(body)); } catch { reject(new Error('Bad JSON')); }
+        });
+      });
+      request.on('error', reject);
+      request.end();
+    });
+
+    usageCache = {
+      fiveHour: data.five_hour?.utilization || 0,
+      fiveHourResetsAt: data.five_hour?.resets_at || null,
+      sevenDay: data.seven_day?.utilization || 0,
+      sevenDayResetsAt: data.seven_day?.resets_at || null
+    };
+    usageCacheTime = now;
+    return usageCache;
+  } catch {
+    // Fallback to ccline cache
+    try {
+      const cachePath = path.join(app.getPath('home'), '.claude', 'ccline', '.api_usage_cache.json');
+      const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+      return {
+        fiveHour: cached.five_hour_utilization || 0,
+        fiveHourResetsAt: null,
+        sevenDay: cached.seven_day_utilization || 0,
+        sevenDayResetsAt: cached.resets_at || null
+      };
+    } catch {
+      return { fiveHour: 0, fiveHourResetsAt: null, sevenDay: 0, sevenDayResetsAt: null };
+    }
+  }
+}
+
+ipcMain.handle('get-usage', () => fetchUsage());
+
 ipcMain.handle('stop-session', (_, sessionId) => {
   const proc = sessions.get(sessionId);
   if (proc) {

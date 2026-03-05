@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   sessionResize: (sessionId, cols, rows) => ipcRenderer.invoke('session-resize', sessionId, cols, rows),
   sessionActive: (sessionId) => ipcRenderer.invoke('session-active', sessionId),
   stopSession: (sessionId) => ipcRenderer.invoke('stop-session', sessionId),
+  getUsage: () => ipcRenderer.invoke('get-usage'),
   onSessionData: (callback) => ipcRenderer.on('session-data', (_, sessionId, data) => callback(sessionId, data)),
   onSessionExit: (callback) => ipcRenderer.on('session-exit', (_, sessionId, code) => callback(sessionId, code)),
 });

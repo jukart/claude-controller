@@ -44,6 +44,68 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   padding-top: 38px; /* space for traffic lights */
 }
 
+#usage-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.usage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.usage-track {
+  flex: 1;
+  height: 4px;
+  background: var(--surface);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.3s, background 0.3s;
+  width: 0%;
+}
+
+.usage-fill.warn {
+  background: var(--yellow, #f9e2af);
+}
+
+.usage-fill.critical {
+  background: var(--red);
+}
+
+.usage-pct {
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+#usage-reset {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 2px;
+}
+
 #sidebar-header {
   display: flex;
   align-items: center;

@@ -321,4 +321,50 @@ addTabBtn.addEventListener('click', async () => {
   await renderProjects();
 });
 
+const usage5hFill = document.getElementById('usage-5h-fill');
+const usage5hPct = document.getElementById('usage-5h-pct');
+const usage7dFill = document.getElementById('usage-7d-fill');
+const usage7dPct = document.getElementById('usage-7d-pct');
+
+function applyUsageLevel(fillEl, pct) {
+  fillEl.style.width = Math.min(pct, 100) + '%';
+  fillEl.classList.remove('warn', 'critical');
+  if (pct >= 80) fillEl.classList.add('critical');
+  else if (pct >= 60) fillEl.classList.add('warn');
+}
+
+const usageReset = document.getElementById('usage-reset');
+
+function formatResetTime(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatResetDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+async function updateUsage() {
+  const { fiveHour, sevenDay, fiveHourResetsAt, sevenDayResetsAt } = await window.api.getUsage();
+  usage5hPct.textContent = Math.round(fiveHour) + '%';
+  usage7dPct.textContent = Math.round(sevenDay) + '%';
+  applyUsageLevel(usage5hFill, fiveHour);
+  applyUsageLevel(usage7dFill, sevenDay);
+
+  const parts = [];
+  if (fiveHourResetsAt) {
+    parts.push('5h resets ' + formatResetTime(fiveHourResetsAt));
+  }
+  if (sevenDayResetsAt) {
+    parts.push('7d resets ' + formatResetDate(sevenDayResetsAt) + ' ' + formatResetTime(sevenDayResetsAt));
+  }
+  usageReset.textContent = parts.join(' · ');
+}
+
+updateUsage();
+setInterval(updateUsage, 30000);
+
 renderProjects();
