@@ -175,6 +175,10 @@ async function fetchUsage() {
       request.on('response', (response) => {
         response.on('data', (chunk) => { body += chunk.toString(); });
         response.on('end', () => {
+          if (response.statusCode !== 200) {
+            reject(new Error('HTTP ' + response.statusCode));
+            return;
+          }
           try { resolve(JSON.parse(body)); } catch { reject(new Error('Bad JSON')); }
         });
       });
@@ -182,10 +186,12 @@ async function fetchUsage() {
       request.end();
     });
 
+    const fiveHourRaw = data.five_hour?.utilization || 0;
+    const sevenDayRaw = data.seven_day?.utilization || 0;
     usageCache = {
-      fiveHour: data.five_hour?.utilization || 0,
+      fiveHour: fiveHourRaw <= 1 ? fiveHourRaw * 100 : fiveHourRaw,
       fiveHourResetsAt: data.five_hour?.resets_at || null,
-      sevenDay: data.seven_day?.utilization || 0,
+      sevenDay: sevenDayRaw <= 1 ? sevenDayRaw * 100 : sevenDayRaw,
       sevenDayResetsAt: data.seven_day?.resets_at || null
     };
     usageCacheTime = now;
