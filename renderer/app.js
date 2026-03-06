@@ -543,9 +543,24 @@ settingsModal.addEventListener('keydown', (e) => {
 const globalAutoStartCheckbox = document.getElementById('global-autostart-claude');
 const globalThemeSelect = document.getElementById('global-theme');
 
+let themeBeforeModal = null;
+
+globalThemeSelect.addEventListener('change', () => {
+  applyTheme(globalThemeSelect.value);
+});
+
+function closeGlobalSettingsModal(revert) {
+  if (revert && themeBeforeModal) {
+    applyTheme(themeBeforeModal);
+  }
+  themeBeforeModal = null;
+  globalSettingsModal.classList.remove('visible');
+}
+
 globalSettingsBtn.addEventListener('click', async () => {
   const settings = await window.api.getGlobalSettings();
-  globalThemeSelect.value = settings.theme || 'dark';
+  themeBeforeModal = settings.theme || 'dark';
+  globalThemeSelect.value = themeBeforeModal;
   globalAutoStartCheckbox.checked = settings.autoStartClaude !== false;
   globalAppsList.innerHTML = '';
   const apps = settings.externalApps || [];
@@ -556,15 +571,15 @@ globalSettingsBtn.addEventListener('click', async () => {
 });
 
 globalSettingsCloseBtn.addEventListener('click', () => {
-  globalSettingsModal.classList.remove('visible');
+  closeGlobalSettingsModal(true);
 });
 
 globalSettingsModal.addEventListener('click', (e) => {
-  if (e.target === globalSettingsModal) globalSettingsModal.classList.remove('visible');
+  if (e.target === globalSettingsModal) closeGlobalSettingsModal(true);
 });
 
 globalSettingsModal.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') globalSettingsModal.classList.remove('visible');
+  if (e.key === 'Escape') closeGlobalSettingsModal(true);
 });
 
 globalAddAppBtn.addEventListener('click', () => {
@@ -582,8 +597,7 @@ globalSettingsSaveBtn.addEventListener('click', async () => {
   }
   const theme = globalThemeSelect.value;
   await window.api.saveGlobalSettings({ theme, autoStartClaude: globalAutoStartCheckbox.checked, externalApps: apps });
-  applyTheme(theme);
-  globalSettingsModal.classList.remove('visible');
+  closeGlobalSettingsModal(false);
   updateLaunchAppButtons();
 });
 
