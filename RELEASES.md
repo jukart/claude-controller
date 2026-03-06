@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Add auto-start Claude setting (global and per-project) to control whether Claude launches on first project click
 - Custom About dialog with app icon, version, and GitHub link
 - Fix external app launch buttons not responding to clicks
 - Improve tab bar spacing and button alignment

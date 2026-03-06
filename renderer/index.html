@@ -51,6 +51,15 @@
             <button id="settings-close-btn" class="modal-close">&times;</button>
           </div>
           <div class="modal-body">
+            <div class="setting-row">
+              <label class="setting-label" for="project-autostart-claude">Auto-start Claude</label>
+              <select id="project-autostart-claude" class="setting-select">
+                <option value="global">Use global setting</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              <p class="field-hint">Whether to auto-launch Claude when selecting this project.</p>
+            </div>
             <label>External Apps</label>
             <p class="field-hint">Commands to run in the project directory. Each app gets a button in the tab bar.</p>
             <div id="external-apps-list"></div>
@@ -68,6 +77,13 @@
             <button id="global-settings-close-btn" class="modal-close">&times;</button>
           </div>
           <div class="modal-body">
+            <div class="setting-row">
+              <label class="setting-label">
+                <input type="checkbox" id="global-autostart-claude" checked>
+                Auto-start Claude on project select
+              </label>
+              <p class="field-hint">Automatically launch Claude when clicking a project for the first time. Can be overridden per project.</p>
+            </div>
             <label>External Apps (available in all projects)</label>
             <p class="field-hint">These apps will appear alongside project-specific apps for every project.</p>
             <div id="global-apps-list"></div>

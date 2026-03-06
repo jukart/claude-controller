@@ -97,11 +97,26 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+async function shouldAutoStartClaude(projectPath) {
+  const projectSettings = await window.api.getProjectSettings(projectPath);
+  const projectValue = projectSettings.autoStartClaude || 'global';
+  if (projectValue === 'yes') return true;
+  if (projectValue === 'no') return false;
+  const globalSettings = await window.api.getGlobalSettings();
+  return globalSettings.autoStartClaude !== false;
+}
+
 async function selectProject(projectPath) {
-  const wasActive = activeProject === projectPath;
   activeProject = projectPath;
 
   const tabs = projectTabs.get(projectPath) || [];
+
+  if (tabs.length === 0) {
+    const autoStart = await shouldAutoStartClaude(projectPath);
+    if (autoStart) {
+      await addTerminalTab(projectPath, true);
+    }
+  }
 
   showProject(projectPath);
   await renderProjects();
@@ -445,9 +460,12 @@ addAppBtn.addEventListener('click', () => {
   lastRow.querySelector('.app-name-input').focus();
 });
 
+const projectAutoStartSelect = document.getElementById('project-autostart-claude');
+
 projectSettingsBtn.addEventListener('click', async () => {
   if (!activeProject) return;
   const settings = await window.api.getProjectSettings(activeProject);
+  projectAutoStartSelect.value = settings.autoStartClaude || 'global';
   loadAppsIntoModal(settings);
   settingsModal.classList.add('visible');
 });
@@ -463,6 +481,7 @@ settingsModal.addEventListener('click', (e) => {
 settingsSaveBtn.addEventListener('click', async () => {
   if (!activeProject) return;
   const settings = await window.api.getProjectSettings(activeProject);
+  settings.autoStartClaude = projectAutoStartSelect.value;
   settings.externalApps = getAppsFromModal();
   delete settings.externalAppCommand; // clean up old format
   await window.api.saveProjectSettings(activeProject, settings);
@@ -475,8 +494,11 @@ settingsModal.addEventListener('keydown', (e) => {
 });
 
 // Global settings modal
+const globalAutoStartCheckbox = document.getElementById('global-autostart-claude');
+
 globalSettingsBtn.addEventListener('click', async () => {
   const settings = await window.api.getGlobalSettings();
+  globalAutoStartCheckbox.checked = settings.autoStartClaude !== false;
   globalAppsList.innerHTML = '';
   const apps = settings.externalApps || [];
   for (const app of apps) {
@@ -510,7 +532,7 @@ globalSettingsSaveBtn.addEventListener('click', async () => {
     const command = row.querySelector('.app-command-input').value.trim();
     if (name && command) apps.push({ name, command });
   }
-  await window.api.saveGlobalSettings({ externalApps: apps });
+  await window.api.saveGlobalSettings({ autoStartClaude: globalAutoStartCheckbox.checked, externalApps: apps });
   globalSettingsModal.classList.remove('visible');
   updateLaunchAppButtons();
 });
