@@ -4,7 +4,8 @@
   box-sizing: border-box;
 }
 
-:root {
+:root,
+[data-theme="dark"] {
   --bg: #1e1e2e;
   --sidebar-bg: #181825;
   --text: #cdd6f4;
@@ -14,6 +15,20 @@
   --green: #a6e3a1;
   --red: #f38ba8;
   --border: #45475a;
+  --yellow: #f9e2af;
+}
+
+[data-theme="light"] {
+  --bg: #eff1f5;
+  --sidebar-bg: #e6e9ef;
+  --text: #4c4f69;
+  --text-dim: #8c8fa1;
+  --accent: #8839ef;
+  --surface: #ccd0da;
+  --green: #40a02b;
+  --red: #d20f39;
+  --border: #bcc0cc;
+  --yellow: #df8e1d;
 }
 
 body {

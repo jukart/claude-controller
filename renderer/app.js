@@ -32,6 +32,73 @@ const sessionToProject = new Map();
 let activeProject = null;
 let tabCounter = 0;
 
+// Theme definitions for xterm.js
+const terminalThemes = {
+  dark: {
+    background: '#1e1e2e',
+    foreground: '#cdd6f4',
+    cursor: '#f5e0dc',
+    selectionBackground: '#45475a',
+    black: '#45475a',
+    red: '#f38ba8',
+    green: '#a6e3a1',
+    yellow: '#f9e2af',
+    blue: '#89b4fa',
+    magenta: '#cba6f7',
+    cyan: '#94e2d5',
+    white: '#bac2de',
+    brightBlack: '#585b70',
+    brightRed: '#f38ba8',
+    brightGreen: '#a6e3a1',
+    brightYellow: '#f9e2af',
+    brightBlue: '#89b4fa',
+    brightMagenta: '#cba6f7',
+    brightCyan: '#94e2d5',
+    brightWhite: '#a6adc8'
+  },
+  light: {
+    background: '#eff1f5',
+    foreground: '#4c4f69',
+    cursor: '#dc8a78',
+    selectionBackground: '#ccd0da',
+    black: '#5c5f77',
+    red: '#d20f39',
+    green: '#40a02b',
+    yellow: '#df8e1d',
+    blue: '#1e66f5',
+    magenta: '#8839ef',
+    cyan: '#179299',
+    white: '#acb0be',
+    brightBlack: '#6c6f85',
+    brightRed: '#d20f39',
+    brightGreen: '#40a02b',
+    brightYellow: '#df8e1d',
+    brightBlue: '#1e66f5',
+    brightMagenta: '#8839ef',
+    brightCyan: '#179299',
+    brightWhite: '#bcc0cc'
+  }
+};
+
+let currentTheme = 'dark';
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  // Update all existing terminals
+  const xtermTheme = terminalThemes[theme];
+  for (const [, tabs] of projectTabs) {
+    for (const tab of tabs) {
+      tab.terminal.options.theme = xtermTheme;
+    }
+  }
+}
+
+async function loadTheme() {
+  const settings = await window.api.getGlobalSettings();
+  applyTheme(settings.theme || 'dark');
+}
+
 function generateSessionId(projectPath) {
   return projectPath + '::' + (tabCounter++);
 }
@@ -137,28 +204,7 @@ async function addTerminalTab(projectPath, launchClaude) {
   const terminal = new Terminal({
     fontSize: 13,
     fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
-    theme: {
-      background: '#1e1e2e',
-      foreground: '#cdd6f4',
-      cursor: '#f5e0dc',
-      selectionBackground: '#45475a',
-      black: '#45475a',
-      red: '#f38ba8',
-      green: '#a6e3a1',
-      yellow: '#f9e2af',
-      blue: '#89b4fa',
-      magenta: '#cba6f7',
-      cyan: '#94e2d5',
-      white: '#bac2de',
-      brightBlack: '#585b70',
-      brightRed: '#f38ba8',
-      brightGreen: '#a6e3a1',
-      brightYellow: '#f9e2af',
-      brightBlue: '#89b4fa',
-      brightMagenta: '#cba6f7',
-      brightCyan: '#94e2d5',
-      brightWhite: '#a6adc8'
-    },
+    theme: terminalThemes[currentTheme],
     cursorBlink: true,
     scrollback: 10000,
     allowProposedApi: true
@@ -495,9 +541,11 @@ settingsModal.addEventListener('keydown', (e) => {
 
 // Global settings modal
 const globalAutoStartCheckbox = document.getElementById('global-autostart-claude');
+const globalThemeSelect = document.getElementById('global-theme');
 
 globalSettingsBtn.addEventListener('click', async () => {
   const settings = await window.api.getGlobalSettings();
+  globalThemeSelect.value = settings.theme || 'dark';
   globalAutoStartCheckbox.checked = settings.autoStartClaude !== false;
   globalAppsList.innerHTML = '';
   const apps = settings.externalApps || [];
@@ -532,7 +580,9 @@ globalSettingsSaveBtn.addEventListener('click', async () => {
     const command = row.querySelector('.app-command-input').value.trim();
     if (name && command) apps.push({ name, command });
   }
-  await window.api.saveGlobalSettings({ autoStartClaude: globalAutoStartCheckbox.checked, externalApps: apps });
+  const theme = globalThemeSelect.value;
+  await window.api.saveGlobalSettings({ theme, autoStartClaude: globalAutoStartCheckbox.checked, externalApps: apps });
+  applyTheme(theme);
   globalSettingsModal.classList.remove('visible');
   updateLaunchAppButtons();
 });
@@ -566,4 +616,5 @@ async function updateLaunchAppButtons() {
   }
 }
 
+loadTheme();
 renderProjects();
