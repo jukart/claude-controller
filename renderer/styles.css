@@ -386,6 +386,7 @@ button, input, #sidebar, #terminal-container, #tab-bar {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  -webkit-app-region: no-drag;
 }
 
 #launch-app-buttons .launch-app-btn,

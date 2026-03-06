@@ -3,6 +3,7 @@
 ## unreleased
 
 - Custom About dialog with app icon, version, and GitHub link
+- Fix external app launch buttons not responding to clicks
 
 ## v1.3.0
 
