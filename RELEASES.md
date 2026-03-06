@@ -1,6 +1,6 @@
 # Releases
 
-## unreleased
+## v1.4.0
 
 - Add light theme with global settings toggle (Catppuccin Latte)
 - Add auto-start Claude setting (global and per-project) to control whether Claude launches on first project click
