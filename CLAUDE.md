@@ -31,3 +31,7 @@ Claude Controller is an Electron app that manages multiple Claude CLI sessions, 
 
 - `node-pty` — native module, requires rebuild for Electron (handled by `electron-rebuild` postinstall). Must be unpacked from asar (`asarUnpack` in build config).
 - `@xterm/xterm` + `@xterm/addon-fit` — loaded directly from `node_modules` via script tags in `index.html` (not bundled).
+
+## Rules
+
+- **Never** modify `RELEASES.md` or create commits unless the user explicitly asks for it.
