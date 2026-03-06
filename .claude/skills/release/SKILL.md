@@ -32,3 +32,16 @@ Deploy a new release to GitHub Releases.
    gh release create v<version> --title "v<version>" --notes "<changelog>" dist/<dmg-file>
    ```
 11. Report the release URL to the user.
+
+## Release notes
+
+Always add this text to the release notes:
+```
+
+The installed application gets a quarantine flag which must be removed manually.
+Installation instructions:
+- download the DMG
+- install the app by dragging it to Applications
+- open a terminal, enter "xattr -cx " and drag the "Claude Controller" app to the Terminal
+- press enter, now you can start the app
+```
