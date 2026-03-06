@@ -4,6 +4,7 @@
 
 - Custom About dialog with app icon, version, and GitHub link
 - Fix external app launch buttons not responding to clicks
+- Improve tab bar spacing and button alignment
 
 ## v1.3.0
 
