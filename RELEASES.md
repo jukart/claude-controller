@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+- Fix Option+key combinations (e.g. Option+Enter) not working in terminal on macOS
+
 ## v1.4.0
 
 - Add light theme with global settings toggle (Catppuccin Latte)
