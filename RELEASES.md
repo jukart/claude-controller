@@ -1,6 +1,6 @@
 # Releases
 
-## unreleased
+## v1.4.2
 
 - Revert macOptionIsMeta to restore default Option key behavior on macOS
 
