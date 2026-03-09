@@ -1,5 +1,9 @@
 # Releases
 
+## unreleased
+
+- Revert macOptionIsMeta to restore default Option key behavior on macOS
+
 ## v1.4.1
 
 - Fix Option+key combinations (e.g. Option+Enter) not working in terminal on macOS
