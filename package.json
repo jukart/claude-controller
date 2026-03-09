@@ -1,6 +1,6 @@
 {
   "name": "claude-controller",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Manage multiple Claude CLI sessions across projects",
   "main": "main.js",
   "scripts": {
