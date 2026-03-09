@@ -207,7 +207,8 @@ async function addTerminalTab(projectPath, launchClaude) {
     theme: terminalThemes[currentTheme],
     cursorBlink: true,
     scrollback: 10000,
-    allowProposedApi: true
+    allowProposedApi: true,
+    macOptionIsMeta: true
   });
 
   const fitAddon = new FitAddon.FitAddon();
