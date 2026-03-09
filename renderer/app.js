@@ -208,7 +208,7 @@ async function addTerminalTab(projectPath, launchClaude) {
     cursorBlink: true,
     scrollback: 10000,
     allowProposedApi: true,
-    macOptionIsMeta: true
+    macOptionIsMeta: false
   });
 
   const fitAddon = new FitAddon.FitAddon();
