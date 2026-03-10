@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+- Fix external app launch not working in packaged (DMG) builds due to minimal shell environment
+- Show error dialog when external app launch fails instead of silently failing
+
 ## v1.4.2
 
 - Revert macOptionIsMeta to restore default Option key behavior on macOS

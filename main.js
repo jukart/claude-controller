@@ -287,13 +287,29 @@ ipcMain.handle('save-global-settings', (_, settings) => {
   fs.writeFileSync(globalSettingsPath, JSON.stringify(settings, null, 2));
 });
 
-// Launch external app
+// Launch external app — use a login shell so the user's full PATH is available
+// (packaged Electron apps launched from Finder have a minimal environment)
 ipcMain.handle('launch-external-app', (_, projectPath, command) => {
   if (!command) return { error: 'No command provided' };
 
-  const { exec } = require('child_process');
-  exec(command, { cwd: projectPath }, (err) => {
-    if (err) console.error('External app error:', err.message);
+  const { spawn } = require('child_process');
+  const userShell = process.env.SHELL || '/bin/zsh';
+  const child = spawn(userShell, ['-lc', command], {
+    cwd: projectPath,
+    detached: true,
+    stdio: ['ignore', 'ignore', 'pipe'],
+    env: { ...process.env, TERM: 'xterm-256color' }
   });
+  let stderr = '';
+  child.stderr.on('data', (data) => { stderr += data.toString(); });
+  child.on('error', (err) => {
+    dialog.showErrorBox('Failed to launch app', `Command: ${command}\n\n${err.message}`);
+  });
+  child.on('close', (code) => {
+    if (code !== 0 && code !== null) {
+      dialog.showErrorBox('App exited with error', `Command: ${command}\nExit code: ${code}\n\n${stderr.trim()}`);
+    }
+  });
+  child.unref();
   return { ok: true };
 });
