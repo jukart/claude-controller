@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v1.4.3
 
 - Fix external app launch not working in packaged (DMG) builds due to minimal shell environment
 - Show error dialog when external app launch fails instead of silently failing
